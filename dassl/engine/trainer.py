@@ -5,6 +5,7 @@ import datetime
 from collections import OrderedDict
 import torch
 import torch.nn as nn
+import pandas as pd
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 
@@ -445,6 +446,16 @@ class SimpleTrainer(TrainerBase):
     @torch.no_grad()
     def test(self, split=None):
         """A generic testing pipeline."""
+        rd = {
+                    0: "White",
+                    1: "Black",
+                    2: "Indian",
+                    3: "Latino_Hispanic",
+                    4: "Southeast Asian",
+                    5: "East Asian",
+                    6: "Middle Eastern"
+        }
+
         self.set_model_mode("eval")
         self.evaluator.reset()
 
@@ -458,14 +469,24 @@ class SimpleTrainer(TrainerBase):
             data_loader = self.test_loader
 
         print(f"Evaluate on the *{split}* set")
-
-        for batch_idx, batch in enumerate(tqdm(data_loader)):
-            input, label = self.parse_batch_test(batch)
-            output = self.model_inference(input)
+        for idx, batch in enumerate(tqdm(data_loader)):
+            img, label = self.parse_batch_test(batch)
+            output = self.model_inference(img)
+            batch_preds = output.max(1)[1].numpy(force=True)
+            if idx == 0:
+                preds_list = batch_preds
+            else:
+                preds_list = np.concatenate((preds_list, batch_preds), axis=None)
             self.evaluator.process(output, label)
 
+        predictions = {
+            "predictions": preds_list
+        }
+        preds_df = pd.DataFrame.from_dict(predictions)
+        preds_path = f"{self.cfg.OUTPUT_DIR}/predictions.csv"
+        print(f"*** SAVING PREDICTIONS TO {preds_path} ***")
+        preds_df.to_csv(preds_path)
         results = self.evaluator.evaluate()
-
         for k, v in results.items():
             tag = f"{split}/{k}"
             self.write_scalar(tag, v, self.epoch)
@@ -476,13 +497,13 @@ class SimpleTrainer(TrainerBase):
         return self.model(input)
 
     def parse_batch_test(self, batch):
-        input = batch["img"]
+        img = batch["img"]
         label = batch["label"]
 
-        input = input.to(self.device)
+        img = img.to(self.device)
         label = label.to(self.device)
 
-        return input, label
+        return img, label
 
     def get_current_lr(self, names=None):
         names = self.get_model_names(names)
