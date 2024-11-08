@@ -18,6 +18,7 @@ from dassl.utils import (
 )
 from dassl.modeling import build_head, build_backbone
 from dassl.evaluation import build_evaluator
+from dassl.evaluation import fface_report
 
 
 class SimpleNet(nn.Module):
@@ -443,19 +444,23 @@ class SimpleTrainer(TrainerBase):
         if meet_checkpoint_freq or last_epoch:
             self.save_model(self.epoch, self.output_dir)
 
+    def save_preds(self, predictions, root_dir, bkb_source):
+        """save predictions to csv file"""
+        race_list = ["White", "Black", "Indian", "Latino_Hispanic",
+                     "Southeast Asian", "East Asian", "Middle Eastern"]
+        outpath = f"{root_dir}/{bkb_source}_predictions.csv"
+        preds = pd.DataFrame.from_dict(predictions)
+        preds = preds.map(lambda x: race_list[x])
+        fface = pd.read_csv("fface_val.csv")
+        fface.drop('service_test', axis=1, inplace=True)
+        fface['race_preds'] = preds
+        print(f"saving predictions to {outpath}")
+        fface.to_csv(outpath)
+        return fface
+
     @torch.no_grad()
     def test(self, split=None):
         """A generic testing pipeline."""
-        rd = {
-                    0: "White",
-                    1: "Black",
-                    2: "Indian",
-                    3: "Latino_Hispanic",
-                    4: "Southeast Asian",
-                    5: "East Asian",
-                    6: "Middle Eastern"
-        }
-
         self.set_model_mode("eval")
         self.evaluator.reset()
 
@@ -482,10 +487,13 @@ class SimpleTrainer(TrainerBase):
         predictions = {
             "predictions": preds_list
         }
-        preds_df = pd.DataFrame.from_dict(predictions)
-        preds_path = f"{self.cfg.OUTPUT_DIR}/predictions.csv"
-        print(f"*** SAVING PREDICTIONS TO {preds_path} ***")
-        preds_df.to_csv(preds_path)
+        bkb_source = self.cfg.MODEL.BACKBONE.SOURCE
+        root_dir = self.cfg.OUTPUT_DIR
+        preds_df = self.save_preds(predictions, root_dir, bkb_source)
+        report = fface_report(preds_df)
+        report_path = f"{root_dir}/{bkb_source}_report.csv"
+        print(f"saving report to {report_path}")
+        report.to_csv(report_path)
         results = self.evaluator.evaluate()
         for k, v in results.items():
             tag = f"{split}/{k}"

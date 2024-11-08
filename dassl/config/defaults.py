@@ -10,6 +10,8 @@ _C.VERSION = 1
 
 # Directory to save the output files (like log.txt and model weights)
 _C.OUTPUT_DIR = "./output"
+# Directory to save predictions csv file
+_C.PREDS_DIR = "/home/lucasmc/Documents/ufrgs/vlms_bias_explore/data/fairface/predictions/openCLIP"
 # Path to a directory where the files were saved previously
 _C.RESUME = ""
 # Set seed to negative value to randomize everything
