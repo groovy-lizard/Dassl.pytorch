@@ -186,7 +186,7 @@ class DataManager:
 
 
 class DatasetWrapper(TorchDataset):
-
+    """DatasetWrapper"""
     def __init__(self, cfg, data_source, transform=None, is_train=False):
         self.cfg = cfg
         self.data_source = data_source
@@ -227,24 +227,13 @@ class DatasetWrapper(TorchDataset):
             "index": idx
         }
 
-        img0 = read_image(item.impath)
-
-        if self.transform is not None:
-            if isinstance(self.transform, (list, tuple)):
-                for i, tfm in enumerate(self.transform):
-                    img = self._transform_image(tfm, img0)
-                    keyname = "img"
-                    if (i + 1) > 1:
-                        keyname += str(i + 1)
-                    output[keyname] = img
-            else:
-                img = self._transform_image(self.transform, img0)
-                output["img"] = img
-        else:
-            output["img"] = img0
-
-        if self.return_img0:
-            output["img0"] = self.to_tensor(img0)  # without any augmentation
+        imname = item.impath.split("/")[-1].split(".")[0]
+        embs_dir = self.cfg.EMBS_DIR
+        mode = "train" if self.is_train else "val"
+        bkb = self.cfg.MODEL.BACKBONE.NAME
+        src = self.cfg.MODEL.BACKBONE.SOURCE
+        embs_path = f"{embs_dir}/{mode}/{bkb}/{src}/{imname}.npy"
+        output["img"] = torch.load(embs_path, map_location='cpu')
 
         return output
 

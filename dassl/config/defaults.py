@@ -11,7 +11,8 @@ _C.VERSION = 1
 # Directory to save the output files (like log.txt and model weights)
 _C.OUTPUT_DIR = "./output"
 # Directory to save predictions csv file
-_C.PREDS_DIR = "/home/lucasmc/Documents/ufrgs/vlms_bias_explore/data/fairface/predictions/openCLIP"
+_C.PREDS_DIR = "/home/lucasmc/Documents/ufrgs//data/results/coop"
+_C.EMBS_DIR = "/home/lucasmc/Documents/ufrgs/data/datasets/FairFace/embeddings"
 # Path to a directory where the files were saved previously
 _C.RESUME = ""
 # Set seed to negative value to randomize everything
@@ -93,7 +94,7 @@ _C.DATASET.ALL_AS_UNLABELED = False
 # Dataloader
 ###########################
 _C.DATALOADER = CN()
-_C.DATALOADER.NUM_WORKERS = 4
+_C.DATALOADER.NUM_WORKERS = 0
 # Apply transformations to an image K times (during training)
 _C.DATALOADER.K_TRANSFORMS = 1
 # img0 denotes image tensor without augmentation
